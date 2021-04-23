@@ -1,28 +1,26 @@
 <template>
   <div class="hello">
     <h2>{{ msg }}</h2>
-    <el-button type="text" @click="dialog = true">调整参数</el-button>
-
     <div class="add-children-action-area">
-      <el-button
-        type="text"
-        @click="
-          () => {
-            clearInput = !clearInput;
-          }
-        "
-        >清除输入</el-button
-      >
-      <el-switch v-model="clearInput" active-color="#13ce66"> </el-switch>
+      <el-button type="text" @click="dialog = true">输入配置</el-button>
       <el-input
+        v-if="!ifSquare"
         v-model.number="inputWidth"
         placeholder="宽"
         clearable
         min="1"
       ></el-input>
       <el-input
+        v-if="!ifSquare"
         v-model.number="inputHeight"
         placeholder="高"
+        clearable
+        min="1"
+      ></el-input>
+      <el-input
+        v-if="ifSquare"
+        v-model.number="inputRadius"
+        placeholder="边长"
         clearable
         min="1"
       ></el-input>
@@ -86,8 +84,10 @@
       </el-select>
     </template>
 
-    <div style="margin-top: 20px">父布局宽度</div>
+    <div style="margin-top: 20px">父布局宽度(%)</div>
     <el-slider v-model="parentWidth"></el-slider>
+    <div style="margin-top: 20px">border-radius(%)</div>
+    <el-slider v-model="borderRadius" max="50"></el-slider>
     <div
       class="parent"
       :style="{
@@ -119,6 +119,7 @@
             height: item.height + 'px',
             'background-color': item.color,
             'line-height': item.height / 2 + 'px',
+            'border-radius':borderRadius+'%'
           }"
           class="childrenBlock fade-enter-active"
           @dblclick="delChildren(index)"
@@ -131,15 +132,37 @@
 
     <!-- 抽屉弹窗 -->
     <el-drawer
-      title="属性配置"
+      title="参数配置"
       :visible.sync="dialog"
-      direction="rtl"
+      direction="ltr"
       custom-class="demo-drawer"
       ref="drawer"
     >
       <div class="demo-drawer__content">
         <el-form>
-          <el-form-item label="align-items:" :label-width="formLabelWidth">
+          <el-form-item>
+            <el-button
+              type="text"
+              @click="
+                () => {
+                  ifSquare = !ifSquare;
+                }
+              "
+              >正方形</el-button
+            >
+            <el-switch v-model="ifSquare" active-color="#13ce66"> </el-switch>
+          </el-form-item>
+          <el-form-item>
+            <el-button
+              type="text"
+              @click="
+                () => {
+                  clearInput = !clearInput;
+                }
+              "
+              >输入后清除</el-button
+            >
+            <el-switch v-model="clearInput" active-color="#13ce66"> </el-switch>
           </el-form-item>
         </el-form>
       </div>
@@ -155,8 +178,10 @@ export default {
   },
   data() {
     return {
+      ifSquare: false,
       clearInput: false,
       parentWidth: 50,
+      borderRadius:'0',
       setParams: [
         {
           popover: {
@@ -346,18 +371,32 @@ export default {
       inputColor: null,
       inputWidth: "",
       inputHeight: "",
+      inputRadius: "",
       inputText: "",
       count: 0,
     };
   },
   methods: {
+    //添加子元素
     addChildren() {
       const newChildren = {
-        width: this.inputWidth ? this.inputWidth : this.getRandomNum(),
-        height: this.inputHeight ? this.inputHeight : this.getRandomNum(),
         color: this.inputColor ? this.inputColor : this.getRandomColor(),
         text: this.inputText || this.count,
       };
+      if (this.ifSquare) {
+        //如果选择正方形
+        (newChildren.width = this.inputRadius
+          ? this.inputRadius
+          : this.getRandomNum()),
+          (newChildren.height = newChildren.width);
+      } else {
+        newChildren.width = this.inputWidth
+          ? this.inputWidth
+          : this.getRandomNum();
+        newChildren.height = this.inputHeight
+          ? this.inputHeight
+          : this.getRandomNum();
+      }
       this.childrenDiv.push(newChildren);
       this.count++;
 
@@ -369,26 +408,33 @@ export default {
         this.inputText = "";
       }
 
+      //弹出message框
       this.$message({
         dangerouslyUseHTMLString: true,
         showClose: true,
         type: "success",
-        duration:1200,
+        duration: 1200,
         message: "成功添加子元素",
       });
     },
+
+    //删除子元素
     delChildren(index = this.childrenDiv.length - 1) {
       this.childrenDiv.splice(index, 1);
       this.$message({
         showClose: true,
         type: "error",
-        duration:1200,
+        duration: 1200,
         message: "成功删除子元素",
       });
     },
+
+    //获取指定范围随机数
     getRandomNum(min = 20, max = 400) {
       return parseInt(Math.random() * (max - min + 1) + min, 10);
     },
+
+    //获取指定颜色
     getRandomColor() {
       var r = Math.floor(Math.random() * 256);
       var g = Math.floor(Math.random() * 256);
@@ -405,6 +451,8 @@ export default {
         this.formatNum(a.toString(16));
       return color;
     },
+
+    //0~9数字前补0
     formatNum(value) {
       return value.length == 1 ? "0" + value : value;
     },
@@ -419,7 +467,6 @@ export default {
   display: flex;
   height: auto;
   background-color: rgba(194, 191, 191, 0.753);
-  border-radius: 8px;
 }
 .add-children-action-area {
   display: flex;
@@ -427,7 +474,6 @@ export default {
   padding: 10px 200px 20px 200px;
 }
 .childrenBlock {
-  border-radius: 8px;
   transition: all 0.5s ease-in-out;
   cursor: pointer;
 }
