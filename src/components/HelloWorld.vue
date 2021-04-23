@@ -2,7 +2,18 @@
   <div class="hello">
     <h2>{{ msg }}</h2>
     <el-button type="text" @click="dialog = true">调整参数</el-button>
+
     <div class="add-children-action-area">
+      <el-button
+        type="text"
+        @click="
+          () => {
+            clearInput = !clearInput;
+          }
+        "
+        >清除输入</el-button
+      >
+      <el-switch v-model="clearInput" active-color="#13ce66"> </el-switch>
       <el-input
         v-model.number="inputWidth"
         placeholder="宽"
@@ -21,8 +32,11 @@
         type="text"
         clearable
       ></el-input>
+
       <el-color-picker v-model="inputColor" show-alpha></el-color-picker>
-      <el-button type="primary" plain @click="addChildren">添加</el-button>
+      <el-badge :value="childrenDiv.length" :max="99" class="item">
+        <el-button type="success" plain @click="addChildren">添加</el-button>
+      </el-badge>
       <el-button
         type="danger"
         plain
@@ -72,7 +86,7 @@
       </el-select>
     </template>
 
-    <div style="margin-top: 10px">父布局宽度</div>
+    <div style="margin-top: 20px">父布局宽度</div>
     <el-slider v-model="parentWidth"></el-slider>
     <div
       class="parent"
@@ -87,21 +101,26 @@
     >
       <el-popover
         placement="top"
-        width="160"
-        trigger="hover"
+        width="230"
+        trigger="click"
         v-for="(item, index) in childrenDiv"
         :key="index"
       >
-        <div>宽度: {{ item.width }}</div>
-        <div>高度: {{ item.height }}</div>
-        <div>颜色: {{ item.color }}</div>
+        <div>
+          宽: <el-input-number v-model="item.width"></el-input-number> px
+        </div>
+        <br />
+        <div>
+          高: <el-input-number v-model="item.height"></el-input-number> px
+        </div>
         <div
           :style="{
-            width: item.width,
-            height: item.height,
+            width: item.width + 'px',
+            height: item.height + 'px',
             'background-color': item.color,
+            'line-height': item.height / 2 + 'px',
           }"
-          class="childrenBlock fade-enter-active fade-leave-active"
+          class="childrenBlock fade-enter-active"
           @dblclick="delChildren(index)"
           slot="reference"
         >
@@ -136,6 +155,7 @@ export default {
   },
   data() {
     return {
+      clearInput: false,
       parentWidth: 50,
       setParams: [
         {
@@ -270,7 +290,7 @@ export default {
             { label: "baseline" },
             { label: "stretch" },
           ],
-          value: "flex-start",
+          value: "stretch",
           name: "align-items",
           popoverKey: "popover-4",
           selectKey: "select-4",
@@ -314,7 +334,7 @@ export default {
             { label: "space-around" },
             { label: "stretch" },
           ],
-          value: "flex-start",
+          value: "stretch",
           name: "align-content",
           popoverKey: "popover-5",
           selectKey: "select-5",
@@ -327,45 +347,43 @@ export default {
       inputWidth: "",
       inputHeight: "",
       inputText: "",
+      count: 0,
     };
   },
   methods: {
     addChildren() {
       const newChildren = {
-        width: this.inputWidth
-          ? this.inputWidth + "px"
-          : this.getRandomNum() + "px",
-        height: this.inputHeight
-          ? this.inputHeight + "px"
-          : this.getRandomNum() + "px",
+        width: this.inputWidth ? this.inputWidth : this.getRandomNum(),
+        height: this.inputHeight ? this.inputHeight : this.getRandomNum(),
         color: this.inputColor ? this.inputColor : this.getRandomColor(),
-        text: this.inputText,
+        text: this.inputText || this.count,
       };
       this.childrenDiv.push(newChildren);
+      this.count++;
 
-      this.$notify({
-        title: "添加子元素",
+      //清除输入
+      if (this.clearInput) {
+        this.inputWidth = "";
+        this.inputHeight = "";
+        this.inputColor = null;
+        this.inputText = "";
+      }
+
+      this.$message({
         dangerouslyUseHTMLString: true,
-        duration:1200,
-        message:
-          "<div>宽度: " +
-          newChildren.width +
-          "</div><div>高度: " +
-          newChildren.height +
-          "</div><div>颜色: " +
-          newChildren.color +
-          "</div>",
-        position: "bottom-right",
+        showClose: true,
         type: "success",
+        duration:1200,
+        message: "成功添加子元素",
       });
     },
     delChildren(index = this.childrenDiv.length - 1) {
       this.childrenDiv.splice(index, 1);
-      this.$notify.error({
-        title: "删除子元素",
-        dangerouslyUseHTMLString: true,
-        duration: 1000,
-        message: "",
+      this.$message({
+        showClose: true,
+        type: "error",
+        duration:1200,
+        message: "成功删除子元素",
       });
     },
     getRandomNum(min = 20, max = 400) {
@@ -411,6 +429,7 @@ export default {
 .childrenBlock {
   border-radius: 8px;
   transition: all 0.5s ease-in-out;
+  cursor: pointer;
 }
 .cursor {
   cursor: default;
@@ -443,11 +462,27 @@ div[class*="childrenBlock"]:hover {
   100% {
     transform: scale(1);
   }
-  
 }
 .fade-enter-active {
   animation: fade-in; /*动画名称*/
   -webkit-animation: fade-in 0.5s; /*针对webkit内核*/
   animation-duration: 0.5s; /*动画持续时间*/
+}
+
+.item {
+  margin-right: 10px;
+}
+
+*[class~="el-input"] {
+  margin-left: 5px;
+  margin-right: 5px;
+}
+*[class*="el-color"] {
+  margin-left: 5px;
+  margin-right: 5px;
+}
+*[class*="el-switch"] {
+  margin-left: 5px;
+  margin-right: 5px;
 }
 </style>
